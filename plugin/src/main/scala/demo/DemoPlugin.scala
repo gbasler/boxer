@@ -14,14 +14,12 @@ class DemoPlugin(val global: Global) extends Plugin {
   val description = "saves original types"
   val components = List[PluginComponent](DemoErasureComponent)
 
-
-
-  private object DemoErasureComponent extends PluginComponent with Transform {
+  private object DemoErasureComponent extends PluginComponent with TypingTransformers with Transform {
     val global: DemoPlugin.this.global.type = DemoPlugin.this.global
 
     import global._
 
-    override val runsAfter = List("erasure")
+    override val runsAfter = List("uncurry")
 
     val phaseName = "demo-plugin-erasure"
 
@@ -37,7 +35,7 @@ class DemoPlugin(val global: Global) extends Plugin {
 
     def newTransformer(unit: CompilationUnit) = new DemoTransformer(unit)
 
-    class DemoTransformer(unit: CompilationUnit) extends Transformer {
+    class DemoTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
 
       override def transform(tree: Tree): Tree = tree match {
         case a@Apply(r@Select(rcvr@Select(predef, set), name), args) if name.toString == "Set" =>
@@ -46,22 +44,22 @@ class DemoPlugin(val global: Global) extends Plugin {
           println("wtf")
           val ident = Ident(newTermName("LinkedHashSet"))
 //          if(a.hasSymbol) {
-            println(s"*** ${a.symbol}")
+//            println(s"*** ${a.symbol}")
 //          }
           val r = a.copy(fun = ident)
 //          r.tpe = a.tpe
 //          r.symbol = a.symbol
 //          r
-//          val owner = tree.symbol.owner
-          // New symbol. What's a Position good for?
-//          val symbol = new TypeSymbol(owner, NoPosition, ident)
-//          definitions.EmptyPackage
-          val r2 = treeCopy.Apply(tree, ident, args)
-//          r2.symbol = newFreeTypeSymbol(name = newTypeName("wtf"), origin = "")
-//          localTyper.typed
-          r2.symbol = NoSymbol
-          r2
-//          Apply(TypeApply(Select(Apply(Select(Apply(Select(Select(This(newTypeName("scala")), scala.Predef), newTermName("Set")), List()), newTermName("apply")), List(Apply(Select(Select(This(newTypeName("scala")), scala.Predef), newTermName("wrapIntArray")), List(ArrayValue(TypeTree(), List(Literal(Constant(1)), Literal(Constant(2)), Literal(Constant(3)))))))), newTermName("$asInstanceOf")), List(TypeTree())), List())), DefDef(Modifiers(METHOD | STABLE | ACCESSOR), newTermName("a"), List(), List(List()), TypeTree(), Select(This(newTypeName("Cell")), newTermName("a "))))))))
+          val s = newFreeTypeSymbol("LinkedHashSet", origin = "")
+          s.setInfo(localTyper.typed(res).tpe)
+          val rr = localTyper.typed(treeCopy.Apply(tree, ident, args))
+          rr.symbol = s
+          rr
+          localTyper.typed(reify {
+            Set.apply(1,2,3)
+          }.tree)
+
+        //          Apply(TypeApply(Select(Apply(Select(Apply(Select(Select(This(newTypeName("scala")), scala.Predef), newTermName("Set")), List()), newTermName("apply")), List(Apply(Select(Select(This(newTypeName("scala")), scala.Predef), newTermName("wrapIntArray")), List(ArrayValue(TypeTree(), List(Literal(Constant(1)), Literal(Constant(2)), Literal(Constant(3)))))))), newTermName("$asInstanceOf")), List(TypeTree())), List())), DefDef(Modifiers(METHOD | STABLE | ACCESSOR), newTermName("a"), List(), List(List()), TypeTree(), Select(This(newTypeName("Cell")), newTermName("a "))))))))
 
         case t => super.transform(tree)
 //          println(showRaw(tree))
