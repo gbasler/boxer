@@ -5,7 +5,7 @@ object build extends Build {
   lazy val root = Project(
     id = "root",
     base = file("."),
-    aggregate = Seq(plugin, main, macros),
+    aggregate = Seq(plugin, main),
     settings = sharedSettings
   )
 
@@ -25,26 +25,6 @@ object build extends Build {
     )
   )
 
-  def scalaMacrosParadiseVersion: String = "2.0.0"
-
-  def scalaMacrosQuasiquotesVersion: String = "2.0.0-M6"
-
-  // simple way to pretty print trees...
-  lazy val macros = {
-    Project(
-      id = "macros",
-      base = file("macros"),
-      dependencies = Seq[ClasspathDep[ProjectReference]](),
-      settings = sharedSettings ++ Seq(
-        libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-        libraryDependencies += "org.scalamacros" % "quasiquotes" % scalaMacrosQuasiquotesVersion cross CrossVersion
-          .full,
-        autoCompilerPlugins := true,
-        addCompilerPlugin("org.scalamacros" % "paradise" % scalaMacrosParadiseVersion cross CrossVersion.full)
-      )
-    )
-  }
-
   // Scalac command line options to install our compiler plugin.
   lazy val usePluginSettings = Seq(
     scalacOptions in Compile ++= {
@@ -61,7 +41,6 @@ object build extends Build {
   lazy val main = Project(
     id = "main",
     base = file("main"),
-    dependencies = Seq[ClasspathDep[ProjectReference]](macros),
     settings = sharedSettings ++ usePluginSettings
   )
 }

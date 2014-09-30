@@ -1,44 +1,22 @@
 package demo
 
 import scala.collection.immutable.HashSet
+import scala.tools.nsc.transform.{TypingTransformers, Transform}
 import scala.tools.nsc.{Global, Phase}
 import scala.tools.nsc.plugins.{Plugin, PluginComponent}
 
 class DemoPlugin(val global: Global) extends Plugin {
 
   import global._
+  import global.definitions._
 
   val name = "demo-plugin"
   val description = "saves original types"
-  val components = List[PluginComponent](DemoTyperComponent, DemoErasureComponent)
+  val components = List[PluginComponent](DemoErasureComponent)
 
-  final case class OriginalTypeAttachment(tp: Type)
 
-  private object DemoTyperComponent extends PluginComponent {
-    val global: DemoPlugin.this.global.type = DemoPlugin.this.global
 
-    import global._
-
-    override val runsAfter = List("typer")
-
-    val phaseName = "demo-plugin-typer"
-
-    override def newPhase(prev: Phase): StdPhase = new StdPhase(prev) {
-      override def apply(unit: CompilationUnit) {
-        new DemoTraverser(unit) traverse unit.body
-      }
-    }
-
-    class DemoTraverser(unit: CompilationUnit) extends Traverser {
-      override def traverse(tree: Tree): Unit = {
-        tree.updateAttachment(OriginalTypeAttachment(tree.tpe))
-        super.traverse(tree)
-      }
-    }
-
-  }
-
-  private object DemoErasureComponent extends PluginComponent {
+  private object DemoErasureComponent extends PluginComponent with TypingTransformers {
     val global: DemoPlugin.this.global.type = DemoPlugin.this.global
 
     import global._
@@ -49,15 +27,42 @@ class DemoPlugin(val global: Global) extends Plugin {
 
     override def newPhase(prev: Phase): StdPhase = new StdPhase(prev) {
       override def apply(unit: CompilationUnit) {
-        new DemoTraverser(unit) traverse unit.body
+//        new DemoTraverser(unit) traverse unit.body
+        println("transforming..." + unit.body)
+        val r = new DemoTransformer(unit) transform unit.body
+        println("after..." + unit.body)
+        r
       }
     }
 
-    class DemoTransformer(unit: CompilationUnit) extends Transformer {
+    def newTransformer(unit: CompilationUnit) = new DemoTransformer(unit)
+
+    class DemoTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
 
       override def transform(tree: Tree): Tree = tree match {
-        case Apply(r@Select(rcvr@Select(predef, set), name), args) if name.toString == "Set" =>
-        Apply(Select(Select(Select(Select(Ident($line30.$read), newTermName("$iw")), newTermName("$iw")), newTermName("LinkedHashSet")), newTermName("apply")), args)
+        case a@Apply(r@Select(rcvr@Select(predef, set), name), args) if name.toString == "Set" =>
+          val res = Apply(Ident(newTermName("LinkedHashSet")), args)
+          unit.warning(tree.pos, s"Transformed $name $a into \n$res")
+          println("wtf")
+          val ident = Ident(newTermName("LinkedHashSet"))
+//          if(a.hasSymbol) {
+            println(s"*** ${a.symbol}")
+//          }
+          val r = a.copy(fun = ident)
+//          r.tpe = a.tpe
+//          r.symbol = a.symbol
+//          r
+          res
+          treeCopy.Apply(tree, ident, args)
+//          Apply(TypeApply(Select(Apply(Select(Apply(Select(Select(This(newTypeName("scala")), scala.Predef), newTermName("Set")), List()), newTermName("apply")), List(Apply(Select(Select(This(newTypeName("scala")), scala.Predef), newTermName("wrapIntArray")), List(ArrayValue(TypeTree(), List(Literal(Constant(1)), Literal(Constant(2)), Literal(Constant(3)))))))), newTermName("$asInstanceOf")), List(TypeTree())), List())), DefDef(Modifiers(METHOD | STABLE | ACCESSOR), newTermName("a"), List(), List(List()), TypeTree(), Select(This(newTypeName("Cell")), newTermName("a "))))))))
+
+        case t => super.transform(tree)
+//          println(showRaw(tree))
+//        case ValDef(modifiers, varName, Apply(name, List(Ident(TypeName("Int")))), Apply(Ident(TermName("Set")), List(Literal(Constant(1)), Literal(Constant(2)), Literal(Constant(3)))))))) if name.toString == "Set" =>
+//
+//          ValDef(Modifiers(), TermName("b"), AppliedTypeTree(Ident(TypeName("Set")), List(Ident(TypeName("Int")))), Apply(Ident(TermName("LinkedHashSet")), List(Literal(Constant(1)), Literal(Constant(2)), Literal(Constant(3))))))))
+//
+//        Apply(Select(Select(Select(Select(Ident($line30.$read), newTermName("$iw")), newTermName("$iw")), newTermName("LinkedHashSet")), newTermName("apply")), args)
       }
     }
 
@@ -78,8 +83,8 @@ class DemoPlugin(val global: Global) extends Plugin {
 
       override def traverse(tree: Tree): Unit = {
         tree match {
-          case New(tpt) if afterTyper(isSet(tpt.tpe)) =>
-            unit.warning(tree.pos, s"Instantiated set!")
+//          case New(tpt) if afterTyper(isSet(tpt.tpe)) =>
+//            unit.warning(tree.pos, s"Instantiated set!")
           //          case Apply(Select(Select(predef, set), name), args) if predef == "scala.Predef" && set == "Set" &&
           //            name.toString == "apply"                =>
 
