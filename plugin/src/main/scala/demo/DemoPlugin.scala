@@ -19,55 +19,19 @@ class DemoPlugin(val global: Global) extends Plugin {
 
     import global._
 
-    override val runsAfter = List("uncurry")
+    override val runsAfter = List("erasure")
 
-    val phaseName = "demo-plugin-erasure"
+    val phaseName = "rewrite-sets"
 
-//    override def newPhase(prev: Phase): StdPhase = new StdPhase(prev) {
-//      override def apply(unit: CompilationUnit) {
-////        new DemoTraverser(unit) traverse unit.body
-//        println("transforming..." + unit.body)
-//        val r = new DemoTransformer(unit) transform unit.body
-//        println("after..." + unit.body)
-//        r
-//      }
-//    }
+    def newTransformer(unit: CompilationUnit) = new SetTransformer(unit)
 
-    def newTransformer(unit: CompilationUnit) = new DemoTransformer(unit)
-
-    class DemoTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
+    class SetTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
 
       override def transform(tree: Tree): Tree = tree match {
         case a@Apply(r@Select(rcvr@Select(predef, set), name), args) if name.toString == "Set" =>
-          val res = Apply(Ident(newTermName("LinkedHashSet")), args)
-          unit.warning(tree.pos, s"Transformed $name $a into \n$res")
-          println("wtf")
-          val ident = Ident(newTermName("LinkedHashSet"))
-//          if(a.hasSymbol) {
-//            println(s"*** ${a.symbol}")
-//          }
-          val r = a.copy(fun = ident)
-//          r.tpe = a.tpe
-//          r.symbol = a.symbol
-//          r
-          val s = newFreeTypeSymbol("LinkedHashSet", origin = "")
-          s.setInfo(localTyper.typed(res).tpe)
-          val rr = localTyper.typed(treeCopy.Apply(tree, ident, args))
-          rr.symbol = s
-          rr
-//          localTyper.typed(reify {
-//            Set.apply(1,2,3)
-//          }.tree)
-
-        //          Apply(TypeApply(Select(Apply(Select(Apply(Select(Select(This(newTypeName("scala")), scala.Predef), newTermName("Set")), List()), newTermName("apply")), List(Apply(Select(Select(This(newTypeName("scala")), scala.Predef), newTermName("wrapIntArray")), List(ArrayValue(TypeTree(), List(Literal(Constant(1)), Literal(Constant(2)), Literal(Constant(3)))))))), newTermName("$asInstanceOf")), List(TypeTree())), List())), DefDef(Modifiers(METHOD | STABLE | ACCESSOR), newTermName("a"), List(), List(List()), TypeTree(), Select(This(newTypeName("Cell")), newTermName("a "))))))))
+          localTyper.typed(treeCopy.Apply(tree, Ident(newTermName("LinkedHashSet")), args))
 
         case t => super.transform(tree)
-//          println(showRaw(tree))
-//        case ValDef(modifiers, varName, Apply(name, List(Ident(TypeName("Int")))), Apply(Ident(TermName("Set")), List(Literal(Constant(1)), Literal(Constant(2)), Literal(Constant(3)))))))) if name.toString == "Set" =>
-//
-//          ValDef(Modifiers(), TermName("b"), AppliedTypeTree(Ident(TypeName("Set")), List(Ident(TypeName("Int")))), Apply(Ident(TermName("LinkedHashSet")), List(Literal(Constant(1)), Literal(Constant(2)), Literal(Constant(3))))))))
-//
-//        Apply(Select(Select(Select(Select(Ident($line30.$read), newTermName("$iw")), newTermName("$iw")), newTermName("LinkedHashSet")), newTermName("apply")), args)
       }
     }
 
