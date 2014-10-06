@@ -55,9 +55,9 @@ class DemoPlugin(val global: Global) extends Plugin {
           val rr = localTyper.typed(treeCopy.Apply(tree, ident, args))
           rr.symbol = s
           rr
-          localTyper.typed(reify {
-            Set.apply(1,2,3)
-          }.tree)
+//          localTyper.typed(reify {
+//            Set.apply(1,2,3)
+//          }.tree)
 
         //          Apply(TypeApply(Select(Apply(Select(Apply(Select(Select(This(newTypeName("scala")), scala.Predef), newTermName("Set")), List()), newTermName("apply")), List(Apply(Select(Select(This(newTypeName("scala")), scala.Predef), newTermName("wrapIntArray")), List(ArrayValue(TypeTree(), List(Literal(Constant(1)), Literal(Constant(2)), Literal(Constant(3)))))))), newTermName("$asInstanceOf")), List(TypeTree())), List())), DefDef(Modifiers(METHOD | STABLE | ACCESSOR), newTermName("a"), List(), List(List()), TypeTree(), Select(This(newTypeName("Cell")), newTermName("a "))))))))
 
