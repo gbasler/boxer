@@ -1,7 +1,9 @@
+package nondet.utils
+
 import scala.collection.SortedSetLike
 import scala.collection.generic._
 import scala.collection.immutable.SortedSet
-import scala.collection.mutable.{ Builder, LinkedHashSet => MLinkedHashSet }
+import scala.collection.mutable.{Builder, LinkedHashSet => MLinkedHashSet}
 
 /**
  * Represents an '''immutable''' linked hash set.

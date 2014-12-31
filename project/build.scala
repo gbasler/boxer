@@ -5,14 +5,14 @@ object build extends Build {
   lazy val root = Project(
     id = "root",
     base = file("."),
-    aggregate = Seq(plugin, main),
+    aggregate = Seq(plugin, main, library),
     settings = sharedSettings
   )
 
   lazy val sharedSettings = Defaults.defaultSettings ++ Seq(
-    scalaVersion := "2.10.4",
-    organization := "demo",
-    name := "boxer"
+    scalaVersion := "2.11.4",
+    organization := "demo"
+//    name := "boxer"
   )
 
   // This subproject contains a Scala compiler plugin
@@ -22,7 +22,8 @@ object build extends Build {
     settings = sharedSettings ++ Seq[Project.Setting[_]](
       libraryDependencies += ("org.scala-lang" % "scala-compiler" % scalaVersion.value),
       publishArtifact in Compile := false
-    )
+    ),
+    dependencies = Seq[ClasspathDep[ProjectReference]](library)
   )
 
   // Scalac command line options to install our compiler plugin.
@@ -37,10 +38,21 @@ object build extends Build {
     }
   )
 
+  // This subproject contains the linked set code
+  lazy val library = Project(
+    id = "library",
+    base = file("library"),
+    settings = sharedSettings //++ Seq[Project.Setting[_]](
+//      libraryDependencies += ("org.scala-lang" % "scala-compiler" % scalaVersion.value)
+//    )
+  )
+
+
   // A regular module with the application code.
   lazy val main = Project(
     id = "main",
     base = file("main"),
-    settings = sharedSettings ++ usePluginSettings
+    settings = sharedSettings ++ usePluginSettings,
+    dependencies = Seq[ClasspathDep[ProjectReference]](library)
   )
 }
