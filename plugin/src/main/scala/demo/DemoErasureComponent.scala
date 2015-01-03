@@ -20,6 +20,7 @@ abstract class DemoErasureComponent extends PluginComponent with Transform with 
 
     //      outer.global.gen.mkAttributedRef(typeOf[mutable.LinkedHashSet[_]].typeSymbol)
 
+    // crashes
     val setSym = typeOf[scala.collection.immutable.Set[_]].typeSymbol
 
     override def transform(tree: Tree): Tree = tree match {
@@ -38,7 +39,7 @@ abstract class DemoErasureComponent extends PluginComponent with Transform with 
         //        gen.mkAttributedRef(typeOf[nondet.utils.LinkedHashSet[_]].typeSymbol)
 
         localTyper.typed(treeCopy.Apply(tree, ref, args))
-
+        a
       case t =>
 
         super.transform(tree)
