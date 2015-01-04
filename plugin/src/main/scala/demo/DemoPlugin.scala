@@ -14,6 +14,7 @@ class DemoPlugin(val global: Global) extends Plugin {
   val rewriteSetComponent = new {
     val global = DemoPlugin.this.global
   } with DemoErasureComponent {
+//    val runsAfter = List("pickler")
     val runsAfter = List("erasure")
   }
 
